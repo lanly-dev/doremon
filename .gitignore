@@ -1,0 +1,8 @@
+node_modules/
+bin/
+resources/js/neutralino.js
+.storage/
+.tmp/
+dist/
+neutralinojs.log
+.tmp-scaffold/

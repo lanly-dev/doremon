@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Doremon</title>
+    <link rel="icon" href="/icons/appIcon.png" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="live-dot" id="liveDot"></span>
+          <div class="brand-text">
+            <h1>Doremon</h1>
+            <p id="brandSub">process &amp; port monitor</p>
+          </div>
+        </div>
+
+        <div class="controls">
+          <input id="search" class="search" type="search" placeholder="Filter name, pid, port…" spellcheck="false" />
+          <label class="select-wrap" title="Refresh interval">
+            <select id="interval">
+              <option value="1000">1s</option>
+              <option value="2000">2s</option>
+              <option value="5000">5s</option>
+            </select>
+          </label>
+          <button id="pauseBtn" class="btn">Pause</button>
+          <button id="hideBtn" class="btn ghost" title="Hide the window and keep monitoring from the tray">Hide to tray</button>
+        </div>
+      </header>
+
+      <section class="stats">
+        <div class="stat">
+          <span class="stat-label">Processes</span>
+          <span class="stat-value" id="statProcs">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Listening ports</span>
+          <span class="stat-value" id="statPorts">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">TCP connections</span>
+          <span class="stat-value" id="statConns">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">CPU (sum of processes)</span>
+          <span class="stat-value" id="statCpu">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Memory</span>
+          <span class="stat-value" id="statMem">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Port events</span>
+          <span class="stat-value" id="statEvents">0</span>
+        </div>
+      </section>
+
+      <div class="error-bar hidden" id="errorBar">
+        <span class="error-text" id="errorText"></span>
+        <button class="btn tiny" id="retryBtn">Retry</button>
+        <button class="btn tiny ghost" id="dismissBtn">Dismiss</button>
+      </div>
+
+      <nav class="tabs">
+        <button class="tab is-active" data-tab="ports">
+          Ports <span class="count" id="tabCountPorts">0</span>
+        </button>
+        <button class="tab" data-tab="processes">
+          Processes <span class="count" id="tabCountProcs">0</span>
+        </button>
+        <button class="tab" data-tab="activity">
+          Activity <span class="count" id="tabCountEvents">0</span>
+        </button>
+
+        <div class="tabs-right">
+          <div class="chip hidden" id="pidChip"></div>
+          <label class="toggle" title="Show only pinned ports, including ones that are currently down">
+            <input type="checkbox" id="pinOnly" />
+            <span id="pinOnlyLabel">Pinned</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="allSockets" />
+            <span>All sockets</span>
+          </label>
+        </div>
+      </nav>
+
+      <main class="panels">
+        <section class="panel is-active" id="panel-ports">
+          <div class="table-wrap">
+            <table class="grid">
+              <thead>
+                <tr>
+                  <th class="pin-col" title="Pin a port to be notified when it opens or closes"></th>
+                  <th class="sortable" data-sort="port">Port</th>
+                  <th class="sortable" data-sort="proto">Proto</th>
+                  <th class="sortable" data-sort="state">State</th>
+                  <th class="sortable" data-sort="addr">Address</th>
+                  <th class="sortable" data-sort="name">Process</th>
+                  <th class="sortable num" data-sort="pid">PID</th>
+                  <th class="sortable num" data-sort="openAt">Since</th>
+                </tr>
+              </thead>
+              <tbody id="portsBody"></tbody>
+            </table>
+            <p class="empty hidden" id="portsEmpty">No matching ports. Listening sockets appear here as soon as they open.</p>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-processes">
+          <div class="table-wrap">
+            <table class="grid">
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="name">Process</th>
+                  <th class="sortable num" data-sort="pid">PID</th>
+                  <th class="sortable num" data-sort="cpuPct">CPU %</th>
+                  <th class="sortable num" data-sort="mem">Memory</th>
+                  <th class="sortable num" data-sort="threads">Threads</th>
+                  <th class="sortable num" data-sort="portCount">Ports</th>
+                  <th class="sortable num" data-sort="connCount">Conns</th>
+                  <th>Window title</th>
+                  <th class="actions-col">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="procsBody"></tbody>
+            </table>
+            <p class="empty hidden" id="procsEmpty">No matching processes.</p>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-activity">
+          <div class="activity-head">
+            <span id="activitySummary">Ports that open and close while Doremon is running show up here.</span>
+            <button class="btn tiny ghost" id="clearEvents">Clear</button>
+          </div>
+          <ul class="events" id="eventsList"></ul>
+          <p class="empty hidden" id="eventsEmpty">No port events yet.</p>
+        </section>
+      </main>
+
+      <footer class="statusbar">
+        <span class="status" id="statusScanner">Starting scanner…</span>
+        <span class="status dim" id="statusUpdated"></span>
+        <span class="status dim hint" id="statusHint">Close the window to keep monitoring from the tray.</span>
+      </footer>
+    </div>
+
+    <script src="/js/neutralino.js"></script>
+    <script src="/js/scanner.js"></script>
+    <script src="/js/actions.js"></script>
+    <script src="/js/app.js"></script>
+  </body>
+</html>

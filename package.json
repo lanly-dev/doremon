@@ -1,0 +1,11 @@
+{
+  "name": "doremon",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tray process and port monitor built with Neutralino.js",
+  "scripts": {
+    "start": "npx --yes @neutralinojs/neu@latest run",
+    "update": "npx --yes @neutralinojs/neu@latest update",
+    "build": "npx --yes @neutralinojs/neu@latest build --release"
+  }
+}
