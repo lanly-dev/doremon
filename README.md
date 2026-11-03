@@ -9,6 +9,10 @@ tray, where the menu shows a live port/process count.
 
 ![Doremon icon](resources/icons/appIcon.png)
 
+The interface borrows the character's palette: a blue body for the header, a thin
+red collar line under it, white surfaces for the tables, and bell yellow for
+pinned ports and alerts. The app and tray icons are the same mark in miniature.
+
 ## What it does
 
 - **Processes** — every process with PID, CPU %, memory, thread count and window
@@ -140,7 +144,7 @@ sh resources/native/scanner.sh 2000
 ```
 neutralino.config.json     # app id, window/tray-friendly window settings, permissions
 resources/index.html       # UI shell
-resources/styles.css       # dark task-manager styling
+resources/styles.css       # Doraemon palette: blue body, red collar, bell yellow
 resources/js/app.js        # snapshot diffing, tables, tray menu, preferences, actions UI
 resources/js/scanner.js    # spawns the helper process and parses its output
 resources/js/actions.js    # runs kill/suspend/resume through the action helper

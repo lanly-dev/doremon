@@ -6,3 +6,4 @@ resources/js/neutralino.js
 dist/
 neutralinojs.log
 .tmp-scaffold/
+.tmp-preview/
