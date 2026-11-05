@@ -67,11 +67,17 @@ neu run
 ## Build a distributable
 
 ```bash
-npm run build    # neu build --release -> dist/
+npm run build          # scripts/build.mjs -> dist/
+npm run build:single   # one self-contained executable
 ```
 
-`dist/` receives the platform binaries plus `resources.neu`. Add
-`--embed-resources` to `neu build` for a single-file executable.
+`scripts/build.mjs` fetches the Neutralino binaries with `neu update` when they
+are missing, runs `neu build --release`, then lists what actually landed in
+`dist/`: the platform executable plus `resources.neu`. Flags: `--single` (alias
+`--embed`) packs the resources into the executable with `--embed-resources`,
+`--clean` wipes `dist/` first, `--no-update` never touches `bin/`.
+
+Without `--single`, keep `resources.neu` beside the executable when you move it.
 
 ## Using it
 
