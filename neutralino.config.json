@@ -30,7 +30,7 @@
       "minHeight": 520,
       "center": true,
       "icon": "/resources/icons/appIcon.png",
-      "enableInspector": true,
+      "enableInspector": false,
       "borderless": false,
       "maximize": false,
       "hidden": false,

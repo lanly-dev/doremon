@@ -64,6 +64,14 @@ neu update
 neu run
 ```
 
+DevTools are off by default (`modes.window.enableInspector` in
+`neutralino.config.json`), so a packaged build never opens them. To inspect while
+developing, pass the internal flag through the CLI:
+
+```bash
+npx --yes @neutralinojs/neu@latest run -- --window-enable-inspector
+```
+
 ## Build a distributable
 
 ```bash
