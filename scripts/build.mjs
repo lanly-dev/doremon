@@ -7,11 +7,14 @@
  *   node scripts/build.mjs --clean    # wipe dist/ before building
  *   node scripts/build.mjs --no-update # never run `neu update`
  *
+ * Every build also writes resources/js/build-info.json (the git commit it was
+ * made from) so the running app can show its own version in the footer.
+ *
  * npm run build / npm run build:single wrap the two common cases.
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,6 +25,8 @@ const args = process.argv.slice(2);
 const wantSingle = args.includes("--single") || args.includes("--embed");
 const wantClean = args.includes("--clean");
 const noUpdate = args.includes("--no-update");
+
+const BUILD_INFO = "resources/js/build-info.json";
 
 const PLATFORM_BINARY = {
   win32: "neutralino-win_x64.exe",
@@ -82,6 +87,26 @@ function walk(dir, depth = 0) {
 
 if (!existsSync(CONFIG)) fail(`${CONFIG} not found in ${root}`);
 const config = readConfig();
+
+function git(argv) {
+  const result = spawnSync("git", argv, { encoding: "utf8" });
+  return result.status === 0 ? String(result.stdout || "").trim() : "";
+}
+
+/** Stamps the bundle with the commit it was built from (shown in the footer). */
+function writeBuildInfo() {
+  const commit = git(["rev-parse", "HEAD"]);
+  const info = {
+    commit,
+    commitShort: commit.slice(0, 7),
+    version: String(config.version || ""),
+    notes: git(["log", "-1", "--format=%s"]),
+    builtAt: new Date().toISOString(),
+    dirty: git(["status", "--porcelain"]).length > 0,
+  };
+  writeFileSync(BUILD_INFO, `${JSON.stringify(info, null, 2)}\n`);
+  return info;
+}
 const binaryName = config?.cli?.binaryName ?? "app";
 const platformBinary = PLATFORM_BINARY[process.platform];
 
@@ -105,6 +130,9 @@ if (wantClean && existsSync("dist")) {
   log("Removing dist/");
   rmSync("dist", { recursive: true, force: true });
 }
+
+const buildInfo = writeBuildInfo();
+log(`Stamped ${buildInfo.commitShort || "(no git commit)"} · ${buildInfo.notes || "no message"}`);
 
 const buildArgs = ["build", "--release", ...(wantSingle ? ["--embed-resources"] : [])];
 log(`neu ${buildArgs.join(" ")}`);

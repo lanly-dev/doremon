@@ -492,6 +492,35 @@
     });
   }
 
+  /* ---------------------------------------------------------------- version */
+
+  // scripts/build.mjs stamps each build with its git commit; a `neu run`
+  // development session has no stamp and shows "dev" instead.
+  async function showBuildLabel() {
+    const label = $('buildLabel');
+    const version = 'v' + (typeof NL_APPVERSION !== 'undefined' ? NL_APPVERSION : '');
+
+    let info = null;
+    try {
+      const response = await fetch('js/build-info.json', { cache: 'no-store' });
+      if (response.ok) info = await response.json();
+    } catch (error) {
+      info = null;
+    }
+
+    // `neu run` loads resources/ from disk, so the stamp lying there belongs to
+    // the last build and cannot describe the code that is actually running.
+    const devRun = typeof NL_RESMODE !== 'undefined' && NL_RESMODE === 'directory';
+    label.textContent = version + ' · ' + (!devRun && info && info.commit ? info.commit.slice(0, 7) : 'dev');
+
+    const details = [];
+    if (devRun) details.push('Development run: resources/ is loaded from disk, so this is not a built version');
+    if (info && info.notes) details.push(info.notes);
+    if (info && info.builtAt) details.push('built ' + new Date(info.builtAt).toLocaleString());
+    if (info && info.dirty) details.push('built from a tree with uncommitted changes');
+    label.title = details.length ? details.join('\n') : 'Development build: no stamped commit';
+  }
+
   /* ------------------------------------------------------------------- tray */
 
   const countOf = (value, word) => value + ' ' + word + (value === 1 ? '' : 's');
@@ -884,6 +913,7 @@
     updateTray();
     Scanner.start(state.interval);
     setInterval(tick, 1000);
+    await showBuildLabel();
   }
 
   document.addEventListener('DOMContentLoaded', init);

@@ -7,3 +7,4 @@ dist/
 neutralinojs.log
 .tmp-scaffold/
 .tmp-preview/
+resources/js/build-info.json
