@@ -11,6 +11,7 @@
   const EVENT_LIMIT = 500;
   const EVENT_RENDER_LIMIT = 300;
   const STATUS_HINT = 'Close the window to keep monitoring from the tray.';
+  const isWindows = () => typeof NL_OS !== 'undefined' && NL_OS === 'Windows';
 
   const state = {
     tab: 'ports',
@@ -43,6 +44,10 @@
     // stays quiet until it drops back under the limit. 0 turns the check off.
     groupLimit: 25,
     alertedGroups: new Set(),
+    // Windows Run-key registration (tray toggle). Read back from the registry
+    // at start-up, so an entry removed by hand also unticks the menu item.
+    autostart: false,
+    autostartBusy: false,
     sort: {
       ports: { key: 'port', dir: 1 },
       processes: { key: 'cpuPct', dir: -1 },
@@ -639,6 +644,7 @@
       { id: 'show', text: 'Open Doremon' },
       { id: 'pause', text: state.paused ? 'Resume monitoring' : 'Pause monitoring', isChecked: state.paused },
       { id: 'notify', text: 'Notify on all port changes', isChecked: state.notify },
+      ...(isWindows() ? [{ id: 'autostart', text: 'Start with Windows', isChecked: state.autostart }] : []),
       { text: '-' },
       { id: 'quit', text: 'Quit Doremon' },
     ];
@@ -719,6 +725,27 @@
       Scanner.start(state.interval);
     }
     updateTray();
+  }
+
+  async function toggleAutostart() {
+    if (state.autostartBusy) return;
+    if (typeof NL_RESMODE !== 'undefined' && NL_RESMODE === 'directory') {
+      showError('Start with Windows works in the packaged app, not under `neu run`.');
+      return;
+    }
+    state.autostartBusy = true;
+    const next = !state.autostart;
+    try {
+      await AutoStart.set(next);
+      state.autostart = next;
+      hideError();
+      flashStatus(next ? 'Doremon will start with Windows' : 'Doremon will no longer start with Windows');
+    } catch (error) {
+      showError('Could not change Start with Windows: ' + ((error && error.message) || error));
+    } finally {
+      state.autostartBusy = false;
+      updateTray();
+    }
   }
 
   function startScanner() {
@@ -980,6 +1007,8 @@
         state.notify = !state.notify;
         savePrefs();
         updateTray();
+      } else if (id === 'autostart') {
+        toggleAutostart();
       } else if (id === 'quit') {
         quit();
       }
@@ -1030,6 +1059,15 @@
 
     setScannerStatus('starting');
     updateTray();
+
+    // The registry is the source of truth for the tray tick.
+    AutoStart.status()
+      .then((enabled) => {
+        state.autostart = enabled;
+        updateTray();
+      })
+      .catch(() => {});
+
     Scanner.start(state.interval);
     setInterval(tick, 1000);
     await showBuildLabel();

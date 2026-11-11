@@ -17,12 +17,12 @@ pinned ports and alerts. The app and tray icons are the same mark in miniature.
 
 - **Processes** — every process with PID, CPU %, memory, thread count and window
   title, sortable and filterable. CPU is computed from the delta of cumulative
-  CPU time between snapshots, normalised by core count. Processes that share an
+  CPU time between snapshots, normalized by core count. Processes that share an
   executable name are grouped: one summary row carries the group's total CPU,
   memory, threads, ports and connections, and expands to its individual PIDs.
 - **Group alerts** — when one process name grows past a configurable number of
   instances (25 by default), Doremon raises a desktop notification once, paints
-  that group's count badge in the alert colour and says so in the status bar. It
+  that group's count badge in the alert color and says so in the status bar. It
   stays quiet until the group drops back under the limit, then re-arms. The limit
   is the `Alert over` field in the Processes toolbar; `0` turns the check off.
 - **Ports** — every listening TCP socket and bound UDP endpoint with the process
@@ -33,7 +33,8 @@ pinned ports and alerts. The app and tray icons are the same mark in miniature.
   show you.
 - **Tray menu** — status line (including how many pinned ports are down), open
   window, pause/resume monitoring, toggle desktop notifications for all port
-  changes, quit. Closing the window hides it to the tray instead of quitting.
+  changes, start with Windows, quit. Closing the window hides it to the tray
+  instead of quitting.
 - **Link between the two views** — click a process to see only the ports it owns;
   click a port to isolate its owner. An "All sockets" toggle adds established
   connections on top of listeners.
@@ -99,20 +100,20 @@ with just `doremon-win_x64.exe`.
 
 ## Start with Windows
 
-There is no installer, so nothing is registered at login automatically. To run
-Doremon every time you sign in, put a shortcut in the per-user Startup folder:
+`Tray → Start with Windows` registers Doremon in the current user's Run key and
+launches it with `--window-hidden`, so at sign-in it comes up in the tray without
+showing a window. The item is ticked while the entry exists and removes it when
+clicked again; the state is read back from the registry at start-up, so a change
+made outside the app is reflected too. This needs the packaged executable —
+under `neu run` the toggle refuses, because the development binary is not the
+app.
 
-1. Move `doremon-win_x64.exe` to a permanent, writable folder, for example
-   `%LOCALAPPDATA%\Programs\Doremon\`. Keep it out of `Downloads`, because the
-   app writes `neutralinojs.log` beside the executable.
-2. Press `Win+R`, run `shell:startup`, and drop a shortcut to the executable into
-   the folder that opens.
-3. The next sign-in starts Doremon with your session. The window opens as usual;
-   close it and the app keeps running in the tray.
-
-Startup entries are per user. Use `shell:common startup` (as administrator) to
-start Doremon for every account, or delete the shortcut to stop starting it
-automatically.
+If you would rather not touch the registry, a shortcut in the per-user Startup
+folder works as well: keep the executable in a permanent, writable folder (e.g.
+`%LOCALAPPDATA%\Programs\Doremon\`, since `neutralinojs.log` is written beside
+it), press `Win+R`, run `shell:startup`, and drop the shortcut into the folder
+that opens. Startup entries are per user; `shell:common startup` (as
+administrator) covers every account.
 
 ## Using it
 
@@ -132,6 +133,7 @@ automatically.
 | `Pause` | Stop the scanner (no polling while paused) |
 | `Hide to tray` | Hide the window; monitoring continues |
 | Close the window | Same as hide — the app keeps running in the tray |
+| Tray → Start with Windows | Launch Doremon at sign-in, hidden to the tray |
 | Tray → Quit | Stop the scanner and exit |
 
 Refresh interval, notification preference, tab, the "All sockets" toggle, the
@@ -188,7 +190,7 @@ sh resources/native/scanner.sh 2000
 ```
 neutralino.config.json     # app id, window/tray-friendly window settings, permissions
 resources/index.html       # UI shell
-resources/styles.css       # Doraemon palette: blue body, red collar, bell yellow
+resources/styles.css       # Doremon palette: blue body, red collar, bell yellow
 resources/js/app.js        # snapshot diffing, tables, tray menu, preferences, actions UI
 resources/js/scanner.js    # spawns the helper process and parses its output
 resources/js/actions.js    # runs kill/suspend/resume through the action helper
@@ -210,12 +212,12 @@ Native API access is limited in `neutralino.config.json` to
   restarting under a new PID stays quiet while a real stop or start alerts. Pins
   are stored, but the alert history is not.
 - The event log lives in memory, so it starts empty on every launch.
-- Linux tray icons depend on an appindicator library being present.
+- Linux tray icons depend on an app-indicator library being present.
 - The POSIX scanners are syntactically checked and follow documented `ps`,
   `lsof` and `ss` output formats, but have not been run on macOS/Linux.
 
 ## Ideas for later
 
-Persisted port history, a built-in start-at-login toggle, a per-process socket
-detail view, a tray submenu listing pinned ports with their state, and a tray
-shortcut to suspend the current top CPU consumer.
+Persisted port history, a per-process socket detail view, a tray submenu listing
+pinned ports with their state, and a tray shortcut to suspend the current top
+CPU consumer.
