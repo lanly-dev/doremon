@@ -32,9 +32,8 @@ pinned ports and alerts. The app and tray icons are the same mark in miniature.
   protocol and the owning process. This is the part a plain `netstat` run cannot
   show you.
 - **Tray menu** — status line (including how many pinned ports are down), open
-  window, pause/resume monitoring, toggle desktop notifications for all port
-  changes, start with Windows, quit. Closing the window hides it to the tray
-  instead of quitting.
+  window, pause/resume monitoring, start with Windows, quit. Closing the window
+  hides it to the tray instead of quitting.
 - **Link between the two views** — click a process to see only the ports it owns;
   click a port to isolate its owner. An "All sockets" toggle adds established
   connections on top of listeners.
@@ -45,9 +44,6 @@ pinned ports and alerts. The app and tray icons are the same mark in miniature.
   notification whenever that port starts or stops listening, whether or not the
   window is open. The `Pinned` filter shows only pinned ports and keeps
   pinned-but-down ports visible, and pins are remembered across restarts.
-
-Notifications for every port are off by default; enable them from the tray menu.
-Pinned ports always notify, because pinning is an explicit request.
 
 ## Requirements
 
@@ -136,9 +132,8 @@ administrator) covers every account.
 | Tray → Start with Windows | Launch Doremon at sign-in, hidden to the tray |
 | Tray → Quit | Stop the scanner and exit |
 
-Refresh interval, notification preference, tab, the "All sockets" toggle, the
-group alert limit and the pinned ports are persisted through
-`Neutralino.storage`.
+Refresh interval, tab, the "All sockets" toggle, the group alert limit and the
+pinned ports are persisted through `Neutralino.storage`.
 
 ## How monitoring works
 

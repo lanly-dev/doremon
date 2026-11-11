@@ -24,7 +24,6 @@
     pinned: new Map(),
     paused: false,
     interval: 2000,
-    notify: false,
     cores: 1,
     processes: [],
     sockets: [],
@@ -232,7 +231,6 @@
 
     recordEvents(closed, 'closed', ts);
     recordEvents(opened, 'opened', ts);
-    if (state.notify) notifyChanges(opened, closed);
 
     checkGroupLimits(processGroups(processes, state.sort.processes));
 
@@ -262,22 +260,6 @@
     state.events = entries.reverse().concat(state.events);
     if (state.events.length > EVENT_LIMIT) state.events.length = EVENT_LIMIT;
     state.eventCount += entries.length;
-  }
-
-  function notifyChanges(opened, closed) {
-    const tell = (title, items) => {
-      if (!items.length) return;
-      if (items.length <= 2) {
-        for (const item of items) {
-          const verb = title === 'Port opened' ? 'is now listening' : 'stopped listening';
-          Neutralino.os.showNotification(title, item.proto.toUpperCase() + ' :' + item.port + ' ' + verb + ' — ' + item.name + ' (' + item.pid + ')').catch(() => {});
-        }
-      } else {
-        Neutralino.os.showNotification(title === 'Port opened' ? 'Ports opened' : 'Ports closed', items.length + ' listening ports ' + (title === 'Port opened' ? 'opened' : 'closed') + ' at once').catch(() => {});
-      }
-    };
-    tell('Port opened', opened);
-    tell('Port closed', closed);
   }
 
   /* ----------------------------------------------------------------- render */
@@ -643,7 +625,6 @@
       { text: '-' },
       { id: 'show', text: 'Open Doremon' },
       { id: 'pause', text: state.paused ? 'Resume monitoring' : 'Pause monitoring', isChecked: state.paused },
-      { id: 'notify', text: 'Notify on all port changes', isChecked: state.notify },
       ...(isWindows() ? [{ id: 'autostart', text: 'Start with Windows', isChecked: state.autostart }] : []),
       { text: '-' },
       { id: 'quit', text: 'Quit Doremon' },
@@ -832,7 +813,6 @@
       const prefs = JSON.parse(raw);
       if (prefs && typeof prefs === 'object') {
         if ([1000, 2000, 5000].includes(prefs.interval)) state.interval = prefs.interval;
-        if (typeof prefs.notify === 'boolean') state.notify = prefs.notify;
         if (typeof prefs.showAllSockets === 'boolean') state.showAllSockets = prefs.showAllSockets;
         if (['ports', 'processes', 'activity'].includes(prefs.tab)) state.tab = prefs.tab;
         if (typeof prefs.pinOnly === 'boolean') state.pinOnly = prefs.pinOnly;
@@ -860,7 +840,6 @@
         PREFS_KEY,
         JSON.stringify({
           interval: state.interval,
-          notify: state.notify,
           showAllSockets: state.showAllSockets,
           tab: state.tab,
           pinOnly: state.pinOnly,
@@ -1003,10 +982,6 @@
         }
       } else if (id === 'pause') {
         togglePause();
-      } else if (id === 'notify') {
-        state.notify = !state.notify;
-        savePrefs();
-        updateTray();
       } else if (id === 'autostart') {
         toggleAutostart();
       } else if (id === 'quit') {
