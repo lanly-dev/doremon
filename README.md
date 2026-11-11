@@ -97,6 +97,23 @@ Flags: `--clean` wipes `dist/` first, `--no-update` never touches `bin/`.
 build deletes the other platforms and that ZIP, so on Windows `dist/` ends up
 with just `doremon-win_x64.exe`.
 
+## Start with Windows
+
+There is no installer, so nothing is registered at login automatically. To run
+Doremon every time you sign in, put a shortcut in the per-user Startup folder:
+
+1. Move `doremon-win_x64.exe` to a permanent, writable folder, for example
+   `%LOCALAPPDATA%\Programs\Doremon\`. Keep it out of `Downloads`, because the
+   app writes `neutralinojs.log` beside the executable.
+2. Press `Win+R`, run `shell:startup`, and drop a shortcut to the executable into
+   the folder that opens.
+3. The next sign-in starts Doremon with your session. The window opens as usual;
+   close it and the app keeps running in the tray.
+
+Startup entries are per user. Use `shell:common startup` (as administrator) to
+start Doremon for every account, or delete the shortcut to stop starting it
+automatically.
+
 ## Using it
 
 | Action | Result |
@@ -199,6 +216,6 @@ Native API access is limited in `neutralino.config.json` to
 
 ## Ideas for later
 
-Persisted port history, start-at-login, a per-process socket detail view, a tray
-submenu listing pinned ports with their state, and a tray shortcut to suspend the
-current top CPU consumer.
+Persisted port history, a built-in start-at-login toggle, a per-process socket
+detail view, a tray submenu listing pinned ports with their state, and a tray
+shortcut to suspend the current top CPU consumer.
