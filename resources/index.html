@@ -77,6 +77,11 @@
         </button>
 
         <div class="tabs-right">
+          <label class="limit-wrap hidden" id="groupLimitWrap" title="Alert when more than this many processes share a name. 0 turns the alert off.">
+            Alert over
+            <input class="num-input" id="groupLimit" type="number" min="0" max="9999" step="1" value="25" />
+            instances
+          </label>
           <div class="chip hidden" id="pidChip"></div>
           <label class="toggle" title="Show only pinned ports, including ones that are currently down">
             <input type="checkbox" id="pinOnly" />

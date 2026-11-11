@@ -37,6 +37,12 @@
     // Processes suspended from this app. Windows does not expose a reliable
     // "is suspended" flag, so the app remembers what it changed this session.
     suspended: new Set(),
+    // Process-name groups the user collapsed in the Processes table.
+    collapsedGroups: new Set(),
+    // A name with more than this many instances raises an alert once, then
+    // stays quiet until it drops back under the limit. 0 turns the check off.
+    groupLimit: 25,
+    alertedGroups: new Set(),
     sort: {
       ports: { key: 'port', dir: 1 },
       processes: { key: 'cpuPct', dir: -1 },
@@ -222,6 +228,8 @@
     recordEvents(closed, 'closed', ts);
     recordEvents(opened, 'opened', ts);
     if (state.notify) notifyChanges(opened, closed);
+
+    checkGroupLimits(processGroups(processes, state.sort.processes));
 
     if (!state.loggedFirstSnapshot) {
       state.loggedFirstSnapshot = true;
@@ -426,34 +434,116 @@
     return sortRows(rows, state.sort.processes, 'cpuPct');
   }
 
+  const GROUP_TOTALS = ['cpuPct', 'mem', 'threads', 'portCount', 'connCount'];
+
+  // Processes sharing an executable name are one group: chrome.exe with 30 tabs
+  // becomes a single line holding the group's totals. A name with one instance
+  // has nothing to group, so it stays a plain row.
+  function processGroups(rows, sort) {
+    const byName = new Map();
+    for (const proc of rows) {
+      const name = proc.name || 'unknown';
+      if (!byName.has(name)) byName.set(name, []);
+      byName.get(name).push(proc);
+    }
+
+    const groups = [];
+    for (const [name, members] of byName) {
+      const group = { name, count: members.length, members: sortRows(members, sort, 'cpuPct') };
+      for (const field of GROUP_TOTALS) {
+        group[field] = members.reduce((sum, proc) => sum + (proc[field] || 0), 0);
+      }
+      // A group has no PID of its own; sorting by PID uses its lowest member.
+      group.pid = members.reduce((low, proc) => Math.min(low, proc.pid || 0), members[0].pid || 0);
+      groups.push(group);
+    }
+    return sortRows(groups, sort, 'cpuPct');
+  }
+
+  const groupKey = (name) => String(name || 'unknown').toLowerCase();
+
+  // One notification per group each time it crosses the limit; falling back to
+  // the allowed count re-arms it. A limit of 0 turns the check off.
+  function checkGroupLimits(groups) {
+    if (!state.groupLimit) return;
+    for (const group of groups) {
+      const key = groupKey(group.name);
+      if (group.count <= state.groupLimit) {
+        state.alertedGroups.delete(key);
+        continue;
+      }
+      if (state.alertedGroups.has(key)) continue;
+      state.alertedGroups.add(key);
+      const limit = state.groupLimit;
+      flashStatus(group.name + ': ' + group.count + ' instances (limit ' + limit + ')');
+      Neutralino.os
+        .showNotification(
+          'Many ' + group.name + ' processes',
+          group.count + ' instances are running — more than the ' + limit + ' allowed for one process name.'
+        )
+        .catch(() => {});
+    }
+  }
+
+  function procRowHtml(proc, child) {
+    const selected = state.pidFilter != null && proc.pid === state.pidFilter ? ' is-selected' : '';
+    const hot = (proc.cpuPct || 0) >= 25 ? ' cpu-hot' : '';
+    const suspended = state.suspended.has(proc.pid);
+    return (
+      '<tr class="' + (selected + (child ? ' is-child' : '')).trim() + '" data-pid="' + proc.pid + '">' +
+      '<td><div class="proc-cell"><span class="proc-name">' + escapeHtml(proc.name) + '</span>' +
+      (suspended ? '<span class="badge suspended">suspended</span>' : '') + '</div></td>' +
+      '<td class="num pid-cell">' + escapeHtml(proc.pid) + '</td>' +
+      '<td class="num mono' + hot + '">' + fmtPct(proc.cpuPct) + '</td>' +
+      '<td class="num mono">' + fmtBytes(proc.mem) + '</td>' +
+      '<td class="num mono">' + (proc.threads || 0) + '</td>' +
+      '<td class="num mono">' + (proc.portCount ? proc.portCount : '·') + '</td>' +
+      '<td class="num mono">' + (proc.connCount ? proc.connCount : '·') + '</td>' +
+      '<td title="' + escapeHtml(proc.title || '') + '">' + escapeHtml(proc.title || '') + '</td>' +
+      '<td class="actions-col">' +
+      '<button type="button" class="btn tiny ghost" data-action="' + (suspended ? 'resume' : 'suspend') + '" data-pid="' + proc.pid + '">' +
+      (suspended ? 'Resume' : 'Suspend') + '</button>' +
+      '<button type="button" class="btn tiny danger" data-action="kill" data-pid="' + proc.pid + '">Kill</button>' +
+      '</td>' +
+      '</tr>'
+    );
+  }
+
+  function groupRowHtml(group) {
+    const key = groupKey(group.name);
+    const collapsed = state.collapsedGroups.has(key);
+    const hot = group.cpuPct >= 25 ? ' cpu-hot' : '';
+    const over = state.groupLimit > 0 && group.count > state.groupLimit;
+    return (
+      '<tr class="group-row" data-group="' + escapeHtml(key) + '" title="' +
+      (collapsed ? 'Show' : 'Hide') + ' the ' + group.count + ' processes in this group">' +
+      '<td><div class="proc-cell">' +
+      '<span class="group-caret">' + (collapsed ? '▸' : '▾') + '</span>' +
+      '<span class="proc-name">' + escapeHtml(group.name) + '</span>' +
+      '<span class="badge group-count' + (over ? ' is-alert' : '') + '" title="' +
+      (over ? 'Over the limit of ' + state.groupLimit + ' instances' : 'Processes in this group') + '">' +
+      group.count + '</span>' +
+      '</div></td>' +
+      '<td class="num pid-cell">—</td>' +
+      '<td class="num mono' + hot + '">' + fmtPct(group.cpuPct) + '</td>' +
+      '<td class="num mono">' + fmtBytes(group.mem) + '</td>' +
+      '<td class="num mono">' + group.threads + '</td>' +
+      '<td class="num mono">' + (group.portCount ? group.portCount : '·') + '</td>' +
+      '<td class="num mono">' + (group.connCount ? group.connCount : '·') + '</td>' +
+      '<td class="proc-note">' + group.count + ' process' + (group.count === 1 ? '' : 'es') + '</td>' +
+      '<td class="actions-col"></td>' +
+      '</tr>' +
+      (collapsed ? '' : group.members.map((proc) => procRowHtml(proc, true)).join(''))
+    );
+  }
+
   function renderProcesses() {
     const rows = processRows();
-    $('procsEmpty').classList.toggle('hidden', rows.length > 0);
+    const groups = processGroups(rows, state.sort.processes);
 
-    $('procsBody').innerHTML = rows
-      .map((proc) => {
-        const selected = state.pidFilter != null && proc.pid === state.pidFilter ? ' is-selected' : '';
-        const hot = (proc.cpuPct || 0) >= 25 ? ' cpu-hot' : '';
-        const suspended = state.suspended.has(proc.pid);
-        return (
-          '<tr class="' + selected.trim() + '" data-pid="' + proc.pid + '">' +
-          '<td><div class="proc-cell"><span class="proc-name">' + escapeHtml(proc.name) + '</span>' +
-          (suspended ? '<span class="badge suspended">suspended</span>' : '') + '</div></td>' +
-          '<td class="num pid-cell">' + escapeHtml(proc.pid) + '</td>' +
-          '<td class="num mono' + hot + '">' + fmtPct(proc.cpuPct) + '</td>' +
-          '<td class="num mono">' + fmtBytes(proc.mem) + '</td>' +
-          '<td class="num mono">' + (proc.threads || 0) + '</td>' +
-          '<td class="num mono">' + (proc.portCount ? proc.portCount : '·') + '</td>' +
-          '<td class="num mono">' + (proc.connCount ? proc.connCount : '·') + '</td>' +
-          '<td title="' + escapeHtml(proc.title || '') + '">' + escapeHtml(proc.title || '') + '</td>' +
-          '<td class="actions-col">' +
-          '<button type="button" class="btn tiny ghost" data-action="' + (suspended ? 'resume' : 'suspend') + '" data-pid="' + proc.pid + '">' +
-          (suspended ? 'Resume' : 'Suspend') + '</button>' +
-          '<button type="button" class="btn tiny danger" data-action="kill" data-pid="' + proc.pid + '">Kill</button>' +
-          '</td>' +
-          '</tr>'
-        );
-      })
+    $('procsEmpty').classList.toggle('hidden', rows.length > 0);
+    $('procsBody').innerHTML = groups
+      .map((group) => (group.count === 1 ? procRowHtml(group.members[0], false) : groupRowHtml(group)))
       .join('');
 
     markSortedHeaders('processes');
@@ -567,6 +657,8 @@
 
   function setActiveTab(tab) {
     state.tab = tab;
+    // The group-alert limit only applies to the Processes table.
+    $('groupLimitWrap').classList.toggle('hidden', tab !== 'processes');
     document.querySelectorAll('.tab').forEach((button) => button.classList.toggle('is-active', button.dataset.tab === tab));
     document.querySelectorAll('.panel').forEach((panel) => panel.classList.toggle('is-active', panel.id === 'panel-' + tab));
     savePrefs();
@@ -717,6 +809,10 @@
         if (typeof prefs.showAllSockets === 'boolean') state.showAllSockets = prefs.showAllSockets;
         if (['ports', 'processes', 'activity'].includes(prefs.tab)) state.tab = prefs.tab;
         if (typeof prefs.pinOnly === 'boolean') state.pinOnly = prefs.pinOnly;
+        if (Number.isFinite(prefs.groupLimit)) state.groupLimit = Math.max(0, Math.min(9999, Math.round(prefs.groupLimit)));
+        if (Array.isArray(prefs.collapsedGroups)) {
+          state.collapsedGroups = new Set(prefs.collapsedGroups.filter((name) => typeof name === 'string'));
+        }
         if (Array.isArray(prefs.pinned)) {
           state.pinned = new Map();
           for (const item of prefs.pinned) {
@@ -741,6 +837,8 @@
           showAllSockets: state.showAllSockets,
           tab: state.tab,
           pinOnly: state.pinOnly,
+          collapsedGroups: Array.from(state.collapsedGroups),
+          groupLimit: state.groupLimit,
           pinned: Array.from(state.pinned.values()).map((entry) => ({ proto: entry.proto, port: entry.port })),
         })
       )
@@ -787,6 +885,17 @@
       render();
     });
 
+    $('groupLimit').addEventListener('change', (event) => {
+      const parsed = Number(event.target.value);
+      const value = Number.isFinite(parsed) ? Math.max(0, Math.min(9999, Math.round(parsed))) : state.groupLimit;
+      state.groupLimit = value;
+      event.target.value = String(value);
+      savePrefs();
+      // A lowered limit can flag groups that are already running.
+      checkGroupLimits(processGroups(state.processes, state.sort.processes));
+      renderProcesses();
+    });
+
     $('clearEvents').addEventListener('click', () => {
       state.events = [];
       state.eventCount = 0;
@@ -831,8 +940,17 @@
         handleAction(button.dataset.action, Number(button.dataset.pid));
         return;
       }
+      const groupRow = event.target.closest('tr[data-group]');
+      if (groupRow) {
+        const key = groupRow.dataset.group;
+        if (state.collapsedGroups.has(key)) state.collapsedGroups.delete(key);
+        else state.collapsedGroups.add(key);
+        savePrefs();
+        renderProcesses();
+        return;
+      }
       const row = event.target.closest('tr');
-      if (!row) return;
+      if (!row || !row.dataset.pid) return;
       state.pidFilter = Number(row.dataset.pid);
       renderPidChip();
       setActiveTab('ports');
@@ -886,6 +1004,7 @@
     $('interval').value = String(state.interval);
     $('allSockets').checked = state.showAllSockets;
     $('pinOnly').checked = state.pinOnly;
+    $('groupLimit').value = String(state.groupLimit);
     setActiveTab(state.tab);
 
     Scanner.init({

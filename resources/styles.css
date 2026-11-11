@@ -445,6 +445,34 @@ select {
   cursor: pointer;
 }
 
+/* Group-alert limit: a number field sitting with the other table controls. */
+.limit-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.num-input {
+  width: 52px;
+  padding: 2px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  text-align: right;
+}
+
+.num-input:focus {
+  outline: none;
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 2px var(--blue-050);
+}
+
 /* ---------- panels and tables ---------- */
 
 .panels {
@@ -616,6 +644,47 @@ select {
 .grid tbody tr.is-selected {
   background: var(--blue-100);
   box-shadow: inset 2px 0 0 var(--blue-600);
+}
+
+/* Grouped processes: one summary row per executable name, members indented
+   underneath. Declared after the zebra/hover rules so the tint wins. */
+.grid tbody tr.group-row,
+.grid tbody tr.group-row:hover {
+  background: #e4f0fb;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: inset 0 -1px 0 var(--border-strong);
+}
+
+.grid tbody tr.group-row:hover {
+  background: #d8eafa;
+}
+
+.group-caret {
+  flex: none;
+  width: 9px;
+  font-size: 10px;
+  color: var(--ink-faint);
+}
+
+.badge.group-count {
+  background: var(--blue-100);
+  color: var(--blue-700);
+}
+
+/* Bell yellow is the palette's alert colour, already used for pinned ports. */
+.badge.group-count.is-alert {
+  background: var(--bell-100);
+  color: #8a6d05;
+}
+
+.grid tbody tr.is-child td:first-child {
+  padding-left: 26px;
+}
+
+.grid tbody tr.is-child .proc-name {
+  font-weight: 400;
+  color: var(--ink-soft);
 }
 
 .mono {

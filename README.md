@@ -17,7 +17,14 @@ pinned ports and alerts. The app and tray icons are the same mark in miniature.
 
 - **Processes** — every process with PID, CPU %, memory, thread count and window
   title, sortable and filterable. CPU is computed from the delta of cumulative
-  CPU time between snapshots, normalised by core count.
+  CPU time between snapshots, normalised by core count. Processes that share an
+  executable name are grouped: one summary row carries the group's total CPU,
+  memory, threads, ports and connections, and expands to its individual PIDs.
+- **Group alerts** — when one process name grows past a configurable number of
+  instances (25 by default), Doremon raises a desktop notification once, paints
+  that group's count badge in the alert colour and says so in the status bar. It
+  stays quiet until the group drops back under the limit, then re-arms. The limit
+  is the `Alert over` field in the Processes toolbar; `0` turns the check off.
 - **Ports** — every listening TCP socket and bound UDP endpoint with the process
   that owns it, PID, bind address and how long it has been listening.
 - **Open/close tracking** — each snapshot is diffed against the previous one, so a
@@ -75,17 +82,20 @@ npx --yes @neutralinojs/neu@latest run -- --window-enable-inspector
 ## Build a distributable
 
 ```bash
-npm run build          # scripts/build.mjs -> dist/
-npm run build:single   # one self-contained executable
+npm run build          # scripts/build.mjs -> dist/doremon/doremon-win_x64.exe
 ```
 
 `scripts/build.mjs` fetches the Neutralino binaries with `neu update` when they
-are missing, runs `neu build --release`, then lists what actually landed in
-`dist/`: the platform executable plus `resources.neu`. Flags: `--single` (alias
-`--embed`) packs the resources into the executable with `--embed-resources`,
-`--clean` wipes `dist/` first, `--no-update` never touches `bin/`.
+are missing, runs `neu build --release --embed-resources`, then lists what
+actually landed in `dist/`. The resources are packed inside the executable, so
+the build produces a single file with no `resources.neu` to keep beside it: copy
+`dist/doremon/doremon-win_x64.exe` anywhere and run it. Quit any running Doremon
+first, because the build overwrites `dist/` while the app holds those files.
+Flags: `--clean` wipes `dist/` first, `--no-update` never touches `bin/`.
 
-Without `--single`, keep `resources.neu` beside the executable when you move it.
+`neu` copies every platform binary and also bundles all of them into a ZIP. The
+build deletes the other platforms and that ZIP, so on Windows `dist/` ends up
+with just `doremon-win_x64.exe`.
 
 ## Using it
 
@@ -93,6 +103,8 @@ Without `--single`, keep `resources.neu` beside the executable when you move it.
 | --- | --- |
 | Click a column header | Sort by that column (click again to reverse) |
 | Type in the filter box | Filter the current table by name, PID, port, address or state |
+| Click a group header | Expand or collapse every process with that name |
+| `Alert over` in Processes | Notify when one process name has more instances than that |
 | Click a process row | Show only that process's ports |
 | Click a port row | Filter to the owning PID (click again to clear) |
 | `☆` / `★` in the Ports table | Pin or unpin a port for open/close alerts |
@@ -105,8 +117,9 @@ Without `--single`, keep `resources.neu` beside the executable when you move it.
 | Close the window | Same as hide — the app keeps running in the tray |
 | Tray → Quit | Stop the scanner and exit |
 
-Refresh interval, notification preference, tab, the "All sockets" toggle and the
-pinned ports are persisted through `Neutralino.storage`.
+Refresh interval, notification preference, tab, the "All sockets" toggle, the
+group alert limit and the pinned ports are persisted through
+`Neutralino.storage`.
 
 ## How monitoring works
 

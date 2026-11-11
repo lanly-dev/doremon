@@ -6,7 +6,6 @@
   "scripts": {
     "start": "npx --yes @neutralinojs/neu@latest run",
     "update": "npx --yes @neutralinojs/neu@latest update",
-    "build": "node scripts/build.mjs",
-    "build:single": "node scripts/build.mjs --single"
+    "build": "node scripts/build.mjs"
   }
 }

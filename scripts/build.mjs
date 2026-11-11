@@ -2,15 +2,14 @@
 /**
  * Builds the Doremon desktop executable with the Neutralino CLI.
  *
- *   node scripts/build.mjs            # dist/ with the platform binary + resources.neu
- *   node scripts/build.mjs --single   # one self-contained executable
+ *   node scripts/build.mjs            # dist/ with one self-contained executable, this platform only
  *   node scripts/build.mjs --clean    # wipe dist/ before building
  *   node scripts/build.mjs --no-update # never run `neu update`
  *
  * Every build also writes resources/js/build-info.json (the git commit it was
  * made from) so the running app can show its own version in the footer.
  *
- * npm run build / npm run build:single wrap the two common cases.
+ * npm run build is the usual entry point.
  */
 
 import { spawnSync } from "node:child_process";
@@ -22,7 +21,6 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 process.chdir(root);
 
 const args = process.argv.slice(2);
-const wantSingle = args.includes("--single") || args.includes("--embed");
 const wantClean = args.includes("--clean");
 const noUpdate = args.includes("--no-update");
 
@@ -85,6 +83,30 @@ function walk(dir, depth = 0) {
   });
 }
 
+/**
+ * `neu build` copies every binary in bin/ and bundles all of them into a ZIP.
+ * Keep only the executable for the machine running the build.
+ */
+function keepOnlyPlatformBinary() {
+  const suffix = platformBinary ? platformBinary.replace(/^neutralino-/, "") : "";
+  if (!suffix) fail(`no Neutralino binary is known for ${process.platform}/${process.arch}`);
+  const dir = join("dist", binaryName);
+  const keep = `${binaryName}-${suffix}`;
+  if (!existsSync(join(dir, keep))) fail(`neu build did not produce ${join(dir, keep)}`);
+
+  for (const entry of readdirSync("dist", { withFileTypes: true })) {
+    const full = join("dist", entry.name);
+    if (!entry.isDirectory() || entry.name !== binaryName) {
+      rmSync(full, { recursive: true, force: true });
+      continue;
+    }
+    for (const child of readdirSync(full, { withFileTypes: true })) {
+      if (child.name !== keep) rmSync(join(full, child.name), { recursive: true, force: true });
+    }
+  }
+  return join(dir, keep);
+}
+
 if (!existsSync(CONFIG)) fail(`${CONFIG} not found in ${root}`);
 const config = readConfig();
 
@@ -134,9 +156,12 @@ if (wantClean && existsSync("dist")) {
 const buildInfo = writeBuildInfo();
 log(`Stamped ${buildInfo.commitShort || "(no git commit)"} · ${buildInfo.notes || "no message"}`);
 
-const buildArgs = ["build", "--release", ...(wantSingle ? ["--embed-resources"] : [])];
+const buildArgs = ["build", "--release", "--embed-resources"];
 log(`neu ${buildArgs.join(" ")}`);
 if (neu(buildArgs) !== 0) fail(`neu ${buildArgs.join(" ")} exited with an error`);
+
+// Drop the other platforms' binaries and the all-platform bundle ZIP.
+log(`Keeping only ${keepOnlyPlatformBinary()}`);
 
 // Report what actually landed in dist/ rather than trusting the CLI's wording.
 const files = walk("dist").sort((a, b) => b.size - a.size);
@@ -154,9 +179,5 @@ for (const file of files) {
 for (const exe of executables) {
   console.log(`\nRun it: ${relative(root, exe.path)}`);
 }
-if (wantSingle) {
-  console.log("Single-file build: everything including resources is inside the executable.");
-} else if (files.some((file) => file.path.endsWith("resources.neu"))) {
-  console.log("Keep resources.neu in the same folder as the executable when you move it.");
-}
+console.log("Single-file build: everything including resources is inside the executable.");
 console.log("");
