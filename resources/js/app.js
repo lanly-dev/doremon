@@ -367,6 +367,7 @@
     cpuPct: (a, b) => (a.cpuPct || 0) - (b.cpuPct || 0),
     mem: (a, b) => (a.mem || 0) - (b.mem || 0),
     threads: (a, b) => (a.threads || 0) - (b.threads || 0),
+    count: (a, b) => (a.count || 1) - (b.count || 1),
     portCount: (a, b) => (a.portCount || 0) - (b.portCount || 0),
     connCount: (a, b) => (a.connCount || 0) - (b.connCount || 0),
   };
@@ -434,9 +435,12 @@
       byName.get(name).push(proc);
     }
 
+    // Sorting groups by size says nothing about their members, so those keep
+    // the CPU order they had before.
+    const memberSort = sort && sort.key === 'count' ? { key: 'cpuPct', dir: -1 } : sort;
     const groups = [];
     for (const [name, members] of byName) {
-      const group = { name, count: members.length, members: sortRows(members, sort, 'cpuPct') };
+      const group = { name, count: members.length, members: sortRows(members, memberSort, 'cpuPct') };
       for (const field of GROUP_TOTALS) {
         group[field] = members.reduce((sum, proc) => sum + (proc[field] || 0), 0);
       }
@@ -486,6 +490,7 @@
       '<td class="num mono">' + (proc.threads || 0) + '</td>' +
       '<td class="num mono">' + (proc.portCount ? proc.portCount : '·') + '</td>' +
       '<td class="num mono">' + (proc.connCount ? proc.connCount : '·') + '</td>' +
+      '<td class="num mono count-cell">·</td>' +
       '<td title="' + escapeHtml(proc.title || '') + '">' + escapeHtml(proc.title || '') + '</td>' +
       '<td class="actions-col">' +
       '<button type="button" class="btn tiny ghost" data-action="' + (suspended ? 'resume' : 'suspend') + '" data-pid="' + proc.pid + '">' +
@@ -517,7 +522,8 @@
       '<td class="num mono">' + group.threads + '</td>' +
       '<td class="num mono">' + (group.portCount ? group.portCount : '·') + '</td>' +
       '<td class="num mono">' + (group.connCount ? group.connCount : '·') + '</td>' +
-      '<td class="proc-note">' + group.count + ' process' + (group.count === 1 ? '' : 'es') + '</td>' +
+      '<td class="num mono count-cell">' + group.count + '</td>' +
+      '<td></td>' +
       '<td class="actions-col"></td>' +
       '</tr>' +
       (collapsed ? '' : group.members.map((proc) => procRowHtml(proc, true)).join(''))

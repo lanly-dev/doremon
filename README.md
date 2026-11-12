@@ -18,10 +18,10 @@ pinned ports and alerts. The app and tray icons are the same mark in miniature.
 - **Processes** — every process with PID, CPU %, memory, thread count and window
   title, sortable and filterable. CPU is computed from the delta of cumulative
   CPU time between snapshots, normalized by core count. Processes are grouped by
-  executable name: one summary row carries the group's total CPU, memory,
-  threads, ports and connections, and expands to its individual PIDs — a name
-  with a single instance is still a group with one child row. Groups start
-  collapsed.
+  executable name: one summary row carries the group's instance count, CPU,
+  memory, threads, ports and connections, and expands to its individual PIDs —
+  a name with a single instance is still a group with one child row. Groups
+  start collapsed.
 - **Group alerts** — when one process name grows past a configurable number of
   instances (25 by default), Doremon raises a desktop notification once, paints
   that group's count badge in the alert color and says so in the status bar. It
