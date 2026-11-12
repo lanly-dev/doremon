@@ -98,6 +98,9 @@ const Scanner = (() => {
         mem: Number(f[4]) || 0,
         threads: Number(f[5]) || 0,
         title: f[6] || '',
+        description: f[7] || '',
+        company: f[8] || '',
+        path: f[9] || '',
       });
       return;
     }

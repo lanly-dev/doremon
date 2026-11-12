@@ -85,12 +85,16 @@
             <input class="num-input" id="groupLimit" type="number" min="0" max="9999" step="1" value="50" />
             instances
           </label>
+          <label class="toggle hidden" id="unknownWrap" title="Show only process groups with no publisher, description or built-in explanation">
+            <input type="checkbox" id="unknownOnly" />
+            <span>Unknown</span>
+          </label>
           <div class="chip hidden" id="pidChip"></div>
-          <label class="toggle" title="Show only pinned ports, including ones that are currently down">
+          <label class="toggle" id="pinOnlyWrap" title="Show only pinned ports, including ones that are currently down">
             <input type="checkbox" id="pinOnly" />
             <span id="pinOnlyLabel">Pinned</span>
           </label>
-          <label class="toggle">
+          <label class="toggle" id="allSocketsWrap">
             <input type="checkbox" id="allSockets" />
             <span>All sockets</span>
           </label>

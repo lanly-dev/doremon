@@ -14,12 +14,54 @@
   const STATUS_HINT = 'Close the window to keep monitoring from the tray.';
   const isWindows = () => typeof NL_OS !== 'undefined' && NL_OS === 'Windows';
 
+  // Windows will not let an unelevated process read the image path of protected
+  // system processes, so those groups get a built-in description instead of the
+  // publisher/file details the scanner reads from the executable. Keys are
+  // lower-case process names, without .exe.
+  const GROUP_HINTS = {
+    svchost: 'Windows service host — many instances are normal',
+    services: 'Windows Service Control Manager',
+    lsass: 'Windows security and sign-in',
+    csrss: 'Windows subsystem process',
+    wininit: 'Windows start-up application',
+    winlogon: 'Windows sign-in and lock screen',
+    smss: 'Windows session manager',
+    dwm: 'Desktop Window Manager',
+    fontdrvhost: 'Windows font driver host',
+    searchindexer: 'Windows Search indexer',
+    msmpeng: 'Microsoft Defender antivirus engine',
+    system: 'Windows kernel and drivers',
+    idle: 'Windows idle process',
+    registry: 'Windows registry process',
+    memcompression: 'Windows memory compression',
+    'secure system': 'Windows security process',
+    msedgewebview2: 'Microsoft Edge WebView2 — embedded browser used by apps',
+    chrome: 'Google Chrome browser',
+    msedge: 'Microsoft Edge browser',
+    node: 'Node.js runtime',
+    explorer: 'Windows File Explorer and desktop',
+    conhost: 'Console Window Host',
+    applicationframehost: 'Windows app window host',
+    runtimebroker: 'Windows app permissions broker',
+    sihost: 'Windows shell infrastructure host',
+    taskhostw: 'Windows task host',
+    ctfmon: 'Windows text input service',
+    textinputhost: 'Windows text input host',
+    startmenuexperiencehost: 'Windows Start menu',
+    shellexperiencehost: 'Windows shell experience host',
+    powershell: 'Windows PowerShell',
+    cmd: 'Windows Command Processor',
+    code: 'Visual Studio Code editor',
+    windowsterminal: 'Windows Terminal',
+  };
+
   const state = {
     tab: 'ports',
     query: '',
     pidFilter: null,
     showAllSockets: false,
     pinOnly: false,
+    unknownOnly: false,
     // Pinned ports: proto|port -> { proto, port, up }. `up` stays null until the
     // first snapshot, so launching the app never alerts about existing ports.
     pinned: new Map(),
@@ -426,7 +468,11 @@
       rows = rows.filter((proc) => proc.pid === state.pidFilter);
     }
     if (state.query) {
-      rows = rows.filter((proc) => matchesQuery(proc.name + ' ' + proc.pid + ' ' + (proc.title || '') + ' ' + (proc.portCount || '')));
+      rows = rows.filter((proc) =>
+        matchesQuery(
+          proc.name + ' ' + proc.pid + ' ' + (proc.title || '') + ' ' + (proc.description || '') + ' ' + (proc.company || '') + ' ' + (proc.path || '') + ' ' + (proc.portCount || '')
+        )
+      );
     }
     return sortRows(rows, state.sort.processes, 'cpuPct');
   }
@@ -455,12 +501,45 @@
       }
       // A group has no PID of its own; sorting by PID uses its lowest member.
       group.pid = members.reduce((low, proc) => Math.min(low, proc.pid || 0), members[0].pid || 0);
+      // Executable details are shared by every instance of a name; use the
+      // first member that exposed them (protected members expose none).
+      const described = members.find((proc) => proc.description || proc.company || proc.path) || {};
+      group.description = described.description || '';
+      group.company = described.company || '';
+      group.path = described.path || '';
       groups.push(group);
     }
     return sortRows(groups, sort, 'cpuPct');
   }
 
   const groupKey = (name) => String(name || 'unknown').toLowerCase();
+
+  function groupHint(name) {
+    return GROUP_HINTS[String(name || '').toLowerCase().replace(/\.exe$/, '')] || '';
+  }
+
+  // A group is unknown when the executable exposed no publisher/description and
+  // there is no built-in hint for its name. These are the rows the Unknown
+  // toggle keeps; a known name without readable metadata is not "unknown".
+  function isUnknownGroup(group) {
+    return !group.description && !group.company && !groupHint(group.name);
+  }
+
+  // A group's subtitle combines the publisher and the executable's own
+  // description. Protected processes fall back to a name-based hint; an unknown
+  // name says so rather than pretending the details were verified.
+  function groupMeta(group) {
+    const hint = groupHint(group.name);
+    const label = [group.company, group.description].filter(Boolean).join(' · ') || hint || 'No executable details available';
+    const details = [];
+    if (group.description) details.push(group.description);
+    if (group.company) details.push('Publisher: ' + group.company);
+    if (group.path) details.push('Path: ' + group.path);
+    if (!group.description && !group.company) details.push(hint || 'No executable details available.');
+    if (!group.path) details.push('Executable path unavailable — protected process or access denied.');
+    else details.push('Read from the executable file details; not a signature check.');
+    return { label, title: details.join('\n') };
+  }
 
   // One notification per group each time it crosses the limit; falling back to
   // the allowed count re-arms it. A limit of 0 turns the check off.
@@ -513,15 +592,19 @@
     const collapsed = !state.expandedGroups.has(key);
     const hot = group.cpuPct >= 25 ? ' cpu-hot' : '';
     const over = state.groupLimit > 0 && group.count > state.groupLimit;
+    const meta = groupMeta(group);
     return (
       '<tr class="group-row" data-group="' + escapeHtml(key) + '" title="' +
       (collapsed ? 'Show' : 'Hide') + ' the ' + group.count + ' processes in this group">' +
-      '<td><div class="proc-cell">' +
+      '<td><div class="proc-cell group-cell">' +
+      '<div class="group-head">' +
       '<span class="group-caret">' + (collapsed ? '▸' : '▾') + '</span>' +
       '<span class="proc-name">' + escapeHtml(group.name) + '</span>' +
       '<span class="badge group-count' + (over ? ' is-alert' : '') + '" title="' +
       (over ? 'Over the limit of ' + state.groupLimit + ' instances' : 'Processes in this group') + '">' +
       group.count + '</span>' +
+      '</div>' +
+      '<span class="group-desc" title="' + escapeHtml(meta.title) + '">' + escapeHtml(meta.label) + '</span>' +
       '</div></td>' +
       '<td class="num pid-cell">—</td>' +
       '<td class="num mono' + hot + '">' + fmtPct(group.cpuPct) + '</td>' +
@@ -539,9 +622,10 @@
 
   function renderProcesses() {
     const rows = processRows();
-    const groups = processGroups(rows, state.sort.processes);
+    let groups = processGroups(rows, state.sort.processes);
+    if (state.unknownOnly) groups = groups.filter(isUnknownGroup);
 
-    $('procsEmpty').classList.toggle('hidden', rows.length > 0);
+    $('procsEmpty').classList.toggle('hidden', groups.length > 0);
     $('procsBody').innerHTML = groups.map((group) => groupRowHtml(group)).join('');
 
     markSortedHeaders('processes');
@@ -717,8 +801,12 @@
 
   function setActiveTab(tab) {
     state.tab = tab;
-    // The group-alert limit only applies to the Processes table.
+    // Each toolbar control is shown only on the table it affects: the port
+    // filters on Ports, the group alert limit and unknown filter on Processes.
     $('groupLimitWrap').classList.toggle('hidden', tab !== 'processes');
+    $('unknownWrap').classList.toggle('hidden', tab !== 'processes');
+    $('pinOnlyWrap').classList.toggle('hidden', tab !== 'ports');
+    $('allSocketsWrap').classList.toggle('hidden', tab !== 'ports');
     document.querySelectorAll('.tab').forEach((button) => button.classList.toggle('is-active', button.dataset.tab === tab));
     document.querySelectorAll('.panel').forEach((panel) => panel.classList.toggle('is-active', panel.id === 'panel-' + tab));
     if (tab === 'alerts') markAlertsRead();
@@ -890,6 +978,7 @@
         if (typeof prefs.showAllSockets === 'boolean') state.showAllSockets = prefs.showAllSockets;
         if (['ports', 'processes', 'activity', 'alerts'].includes(prefs.tab)) state.tab = prefs.tab;
         if (typeof prefs.pinOnly === 'boolean') state.pinOnly = prefs.pinOnly;
+        if (typeof prefs.unknownOnly === 'boolean') state.unknownOnly = prefs.unknownOnly;
         if (Number.isFinite(prefs.groupLimit)) state.groupLimit = Math.max(0, Math.min(9999, Math.round(prefs.groupLimit)));
         if (Array.isArray(prefs.expandedGroups)) {
           state.expandedGroups = new Set(prefs.expandedGroups.filter((name) => typeof name === 'string'));
@@ -930,6 +1019,7 @@
           showAllSockets: state.showAllSockets,
           tab: state.tab,
           pinOnly: state.pinOnly,
+          unknownOnly: state.unknownOnly,
           expandedGroups: Array.from(state.expandedGroups),
           groupLimit: state.groupLimit,
           alerts: state.alerts.slice(0, ALERT_LIMIT).map((alert) => ({
@@ -993,6 +1083,12 @@
       savePrefs();
       // A lowered limit can flag groups that are already running.
       checkGroupLimits(processGroups(state.processes, state.sort.processes));
+      renderProcesses();
+    });
+
+    $('unknownOnly').addEventListener('change', (event) => {
+      state.unknownOnly = event.target.checked;
+      savePrefs();
       renderProcesses();
     });
 
@@ -1111,6 +1207,7 @@
     $('interval').value = String(state.interval);
     $('allSockets').checked = state.showAllSockets;
     $('pinOnly').checked = state.pinOnly;
+    $('unknownOnly').checked = state.unknownOnly;
     $('groupLimit').value = String(state.groupLimit);
     setActiveTab(state.tab);
     renderAlerts();

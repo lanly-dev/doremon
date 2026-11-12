@@ -21,7 +21,12 @@ pinned ports and alerts. The app and tray icons are the same mark in miniature.
   executable name: one summary row carries the group's instance count, CPU,
   memory, threads, ports and connections, and expands to its individual PIDs —
   a name with a single instance is still a group with one child row. Groups
-  start collapsed.
+  start collapsed. Each group also carries a quiet second line from its
+  executable's version details — publisher and file description, with the full
+  path in the tooltip — so a surprising `svchost` or `msedgewebview2` group can
+  be checked instead of guessed at. Protected Windows processes fall back to
+  built-in descriptions. The `Unknown` toggle narrows the table to groups with
+  no publisher, file description or built-in explanation.
 - **Group alerts** — when one process name grows past a configurable number of
   instances (50 by default), Doremon raises a desktop notification once, paints
   that group's count badge in the alert color and says so in the status bar. It
@@ -129,6 +134,7 @@ administrator) covers every account.
 | Click a port row | Filter to the owning PID (click again to clear) |
 | `☆` / `★` in the Ports table | Pin or unpin a port for open/close alerts |
 | `Pinned` toggle | Show only pinned ports, including ones that are currently down |
+| `Unknown` toggle | Show only process groups with no publisher, description or built-in explanation |
 | `Suspend` / `Resume` | Freeze all threads of a process, or continue them |
 | `Kill` | Terminate the process (confirmed first, then `SIGKILL`/`Stop-Process -Force`) |
 | `All sockets` | Include established TCP connections, not just listeners |
@@ -138,8 +144,9 @@ administrator) covers every account.
 | Tray → Start with Windows | Launch Doremon at sign-in, hidden to the tray |
 | Tray → Quit | Stop the scanner and exit |
 
-Refresh interval, tab, the "All sockets" toggle, the group alert limit and the
-pinned ports are persisted through `Neutralino.storage`.
+Refresh interval, tab, the "All sockets" toggle, the group alert limit, the
+`Unknown` filter and the pinned ports are persisted through
+`Neutralino.storage`.
 
 ## How monitoring works
 
@@ -168,13 +175,16 @@ The helper emits tab-separated lines, one snapshot at a time:
 
 ```
 BEGIN <tsMs> <cores>
-P <pid> <name> <cpuSeconds> <memBytes> <threads> <windowTitle>
+P <pid> <name> <cpuSeconds> <memBytes> <threads> <windowTitle> [<description> <company> <path>]
 L <proto> <address> <port> <state> <pid>
 END <tsMs>
 ```
 
 `state` is `Listen`, `Bound` (UDP) or a TCP state such as `Established`.
 `cpuSeconds` is cumulative CPU time, which the UI converts to a percentage.
+The Windows scanner appends the executable's file description, company name and
+path; the POSIX scanner leaves those fields empty, and the UI falls back to its
+name-based descriptions.
 
 You can run the scanner directly to see what the app sees:
 
@@ -216,6 +226,9 @@ Native API access is limited in `neutralino.config.json` to
 - Linux tray icons depend on an app-indicator library being present.
 - The POSIX scanners are syntactically checked and follow documented `ps`,
   `lsof` and `ss` output formats, but have not been run on macOS/Linux.
+- Process publishers and descriptions come from the executable's version
+  resource and path, not a verified digital signature. A name or version
+  resource can be spoofed, so treat the line as context and check the path.
 
 ## Ideas for later
 
