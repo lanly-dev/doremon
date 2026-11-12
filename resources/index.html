@@ -75,11 +75,14 @@
         <button class="tab" data-tab="activity">
           Activity <span class="count" id="tabCountEvents">0</span>
         </button>
+        <button class="tab" data-tab="alerts">
+          Alerts <span class="count" id="tabCountAlerts">0</span>
+        </button>
 
         <div class="tabs-right">
           <label class="limit-wrap hidden" id="groupLimitWrap" title="Alert when more than this many processes share a name. 0 turns the alert off.">
             Alert over
-            <input class="num-input" id="groupLimit" type="number" min="0" max="9999" step="1" value="25" />
+            <input class="num-input" id="groupLimit" type="number" min="0" max="9999" step="1" value="50" />
             instances
           </label>
           <div class="chip hidden" id="pidChip"></div>
@@ -146,6 +149,15 @@
           </div>
           <ul class="events" id="eventsList"></ul>
           <p class="empty hidden" id="eventsEmpty">No port events yet.</p>
+        </section>
+
+        <section class="panel" id="panel-alerts">
+          <div class="activity-head">
+            <span id="alertsSummary">Group and pinned-port alerts show up here.</span>
+            <button class="btn tiny ghost" id="clearAlerts">Clear</button>
+          </div>
+          <ul class="events alerts" id="alertsList"></ul>
+          <p class="empty hidden" id="alertsEmpty">No alerts yet.</p>
         </section>
       </main>
 

@@ -10,6 +10,7 @@
   const PREFS_KEY = 'doremon.prefs';
   const EVENT_LIMIT = 500;
   const EVENT_RENDER_LIMIT = 300;
+  const ALERT_LIMIT = 100;
   const STATUS_HINT = 'Close the window to keep monitoring from the tray.';
   const isWindows = () => typeof NL_OS !== 'undefined' && NL_OS === 'Windows';
 
@@ -33,6 +34,10 @@
     events: [],
     eventSeq: 0,
     eventCount: 0,
+    // Group and pinned-port alerts, newest first. `read` drives the tab count
+    // and the red tray icon; opening the Alerts tab marks them all read.
+    alerts: [],
+    unreadAlerts: 0,
     lastSnapshotAt: 0,
     // Processes suspended from this app. Windows does not expose a reliable
     // "is suspended" flag, so the app remembers what it changed this session.
@@ -41,7 +46,7 @@
     expandedGroups: new Set(),
     // A name with more than this many instances raises an alert once, then
     // stays quiet until it drops back under the limit. 0 turns the check off.
-    groupLimit: 25,
+    groupLimit: 50,
     alertedGroups: new Set(),
     // Windows Run-key registration (tray toggle). Read back from the registry
     // at start-up, so an entry removed by hand also unticks the menu item.
@@ -141,6 +146,7 @@
     const body = up ? label + ' is listening' + who : label + ' is no longer listening';
     flashStatus(title.replace('Pinned port', 'Pinned') + ': ' + body);
     Neutralino.os.showNotification(title, body).catch(() => {});
+    recordAlert('port', title, body);
   }
 
   /* -------------------------------------------------------------- snapshots */
@@ -269,6 +275,7 @@
     renderPorts();
     renderProcesses();
     renderActivity();
+    renderAlerts();
     updateTray();
   }
 
@@ -293,6 +300,8 @@
     $('tabCountPorts').textContent = String(state.listeners.size);
     $('tabCountProcs').textContent = String(state.processes.length);
     $('tabCountEvents').textContent = String(state.events.length);
+    $('tabCountAlerts').textContent = state.unreadAlerts > 99 ? '99+' : String(state.unreadAlerts);
+    $('tabCountAlerts').classList.toggle('is-new', state.unreadAlerts > 0);
   }
 
   function portRows() {
@@ -466,13 +475,11 @@
       if (state.alertedGroups.has(key)) continue;
       state.alertedGroups.add(key);
       const limit = state.groupLimit;
+      const title = 'Many ' + group.name + ' processes';
+      const body = group.count + ' instances are running — more than the ' + limit + ' allowed for one process name.';
       flashStatus(group.name + ': ' + group.count + ' instances (limit ' + limit + ')');
-      Neutralino.os
-        .showNotification(
-          'Many ' + group.name + ' processes',
-          group.count + ' instances are running — more than the ' + limit + ' allowed for one process name.'
-        )
-        .catch(() => {});
+      Neutralino.os.showNotification(title, body).catch(() => {});
+      recordAlert('group', title, body);
     }
   }
 
@@ -563,6 +570,67 @@
       .join('');
   }
 
+  function recountUnread() {
+    state.unreadAlerts = state.alerts.reduce((count, alert) => count + (alert.read ? 0 : 1), 0);
+  }
+
+  function recordAlert(kind, title, body) {
+    const alert = {
+      ts: Date.now(),
+      kind,
+      title,
+      body,
+      // An alert that lands while the Alerts tab is on screen is already read.
+      read: state.tab === 'alerts' && document.visibilityState === 'visible',
+    };
+    state.alerts.unshift(alert);
+    if (state.alerts.length > ALERT_LIMIT) state.alerts.length = ALERT_LIMIT;
+    recountUnread();
+    savePrefs();
+    renderAlerts();
+    renderStats();
+    updateTray();
+  }
+
+  function markAlertsRead() {
+    let changed = false;
+    for (const alert of state.alerts) {
+      if (alert.read) continue;
+      alert.read = true;
+      changed = true;
+    }
+    if (!changed) return;
+    recountUnread();
+    savePrefs();
+    renderAlerts();
+    renderStats();
+    updateTray();
+  }
+
+  function renderAlerts() {
+    const list = $('alertsList');
+    const alerts = state.alerts.slice(0, ALERT_LIMIT);
+    $('alertsEmpty').classList.toggle('hidden', alerts.length > 0);
+    const unread = state.unreadAlerts ? ' · ' + state.unreadAlerts + ' new' : '';
+    $('alertsSummary').textContent = alerts.length
+      ? alerts.length + ' alert' + (alerts.length === 1 ? '' : 's') + unread
+      : 'Group and pinned-port alerts show up here.';
+
+    list.innerHTML = alerts
+      .map(
+        (alert) =>
+          '<li class="alert-item">' +
+          '<span class="ts">' + fmtClock(alert.ts) + '</span>' +
+          '<span class="badge alert">' + escapeHtml(alert.kind) + '</span>' +
+          '<span class="alert-text">' +
+          '<span class="alert-title">' + escapeHtml(alert.title) + '</span>' +
+          '<span class="alert-body">' + escapeHtml(alert.body) + '</span>' +
+          '</span>' +
+          '</li>'
+      )
+      .join('');
+  }
+
   function markSortedHeaders(panel) {
     const table = $(panel === 'ports' ? 'panel-ports' : 'panel-processes');
     const sort = state.sort[panel];
@@ -613,6 +681,7 @@
   }
 
   async function updateTray() {
+    const icon = state.unreadAlerts > 0 ? '/resources/icons/trayIconAlert.png' : '/resources/icons/trayIcon.png';
     const menu = [
       {
         id: 'status',
@@ -634,10 +703,10 @@
       { id: 'quit', text: 'Quit Doremon' },
     ];
 
-    const signature = JSON.stringify(menu);
+    const signature = JSON.stringify({ icon, menu });
     if (signature === state.traySignature) return;
     try {
-      await Neutralino.os.setTray({ icon: '/resources/icons/trayIcon.png', menuItems: menu });
+      await Neutralino.os.setTray({ icon, menuItems: menu });
       state.traySignature = signature;
     } catch (error) {
       Neutralino.debug.log('setTray failed: ' + ((error && error.message) || error), 'WARNING');
@@ -652,6 +721,7 @@
     $('groupLimitWrap').classList.toggle('hidden', tab !== 'processes');
     document.querySelectorAll('.tab').forEach((button) => button.classList.toggle('is-active', button.dataset.tab === tab));
     document.querySelectorAll('.panel').forEach((panel) => panel.classList.toggle('is-active', panel.id === 'panel-' + tab));
+    if (tab === 'alerts') markAlertsRead();
     savePrefs();
   }
 
@@ -818,7 +888,7 @@
       if (prefs && typeof prefs === 'object') {
         if ([1000, 2000, 5000].includes(prefs.interval)) state.interval = prefs.interval;
         if (typeof prefs.showAllSockets === 'boolean') state.showAllSockets = prefs.showAllSockets;
-        if (['ports', 'processes', 'activity'].includes(prefs.tab)) state.tab = prefs.tab;
+        if (['ports', 'processes', 'activity', 'alerts'].includes(prefs.tab)) state.tab = prefs.tab;
         if (typeof prefs.pinOnly === 'boolean') state.pinOnly = prefs.pinOnly;
         if (Number.isFinite(prefs.groupLimit)) state.groupLimit = Math.max(0, Math.min(9999, Math.round(prefs.groupLimit)));
         if (Array.isArray(prefs.expandedGroups)) {
@@ -831,6 +901,19 @@
             const proto = String(item.proto || 'tcp').toLowerCase();
             state.pinned.set(pinKey(proto, item.port), { proto, port: item.port, up: null });
           }
+        }
+        if (Array.isArray(prefs.alerts)) {
+          state.alerts = prefs.alerts
+            .filter((alert) => alert && Number.isFinite(alert.ts) && typeof alert.title === 'string' && typeof alert.body === 'string')
+            .slice(0, ALERT_LIMIT)
+            .map((alert) => ({
+              ts: alert.ts,
+              kind: alert.kind === 'port' ? 'port' : 'group',
+              title: alert.title.slice(0, 200),
+              body: alert.body.slice(0, 500),
+              read: Boolean(alert.read),
+            }));
+          recountUnread();
         }
       }
     } catch (error) {
@@ -849,6 +932,13 @@
           pinOnly: state.pinOnly,
           expandedGroups: Array.from(state.expandedGroups),
           groupLimit: state.groupLimit,
+          alerts: state.alerts.slice(0, ALERT_LIMIT).map((alert) => ({
+            ts: alert.ts,
+            kind: alert.kind,
+            title: alert.title,
+            body: alert.body,
+            read: alert.read,
+          })),
           pinned: Array.from(state.pinned.values()).map((entry) => ({ proto: entry.proto, port: entry.port })),
         })
       )
@@ -911,6 +1001,15 @@
       state.eventCount = 0;
       renderStats();
       renderActivity();
+    });
+
+    $('clearAlerts').addEventListener('click', () => {
+      state.alerts = [];
+      state.unreadAlerts = 0;
+      savePrefs();
+      renderAlerts();
+      renderStats();
+      updateTray();
     });
 
     document.querySelectorAll('.tab').forEach((button) => {
@@ -1014,6 +1113,8 @@
     $('pinOnly').checked = state.pinOnly;
     $('groupLimit').value = String(state.groupLimit);
     setActiveTab(state.tab);
+    renderAlerts();
+    renderStats();
 
     Scanner.init({
       snapshot: buildSnapshot,

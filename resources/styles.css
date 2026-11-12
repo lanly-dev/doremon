@@ -395,6 +395,11 @@ select {
   background: var(--blue-100);
 }
 
+.tab .count.is-new {
+  color: #fff;
+  background: var(--red-600);
+}
+
 .tabs-right {
   display: flex;
   align-items: center;
@@ -760,6 +765,11 @@ select {
   color: var(--blue-700);
 }
 
+.badge.alert {
+  background: var(--red-100);
+  color: var(--red-700);
+}
+
 .badge.close {
   background: var(--red-100);
   color: var(--red-700);
@@ -853,6 +863,34 @@ select {
   color: var(--ink-faint);
   flex: none;
   font-size: 10px;
+}
+
+.alerts .alert-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.alerts .alert-title {
+  color: var(--ink);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alerts .alert-body {
+  color: var(--ink-faint);
+  font-size: 10.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alerts .alert-item .badge {
+  flex: none;
 }
 
 /* ---------- status bar ---------- */

@@ -23,10 +23,13 @@ pinned ports and alerts. The app and tray icons are the same mark in miniature.
   a name with a single instance is still a group with one child row. Groups
   start collapsed.
 - **Group alerts** — when one process name grows past a configurable number of
-  instances (25 by default), Doremon raises a desktop notification once, paints
+  instances (50 by default), Doremon raises a desktop notification once, paints
   that group's count badge in the alert color and says so in the status bar. It
   stays quiet until the group drops back under the limit, then re-arms. The limit
   is the `Alert over` field in the Processes toolbar; `0` turns the check off.
+- **Alert center** — group and pinned-port alerts are kept newest-first in the
+  Alerts tab and survive a restart. Unread ones show a red count on the tab and
+  turn the tray icon red until the tab is opened; `Clear` empties the history.
 - **Ports** — every listening TCP socket and bound UDP endpoint with the process
   that owns it, PID, bind address and how long it has been listening.
 - **Open/close tracking** — each snapshot is diffed against the previous one, so a
@@ -121,6 +124,7 @@ administrator) covers every account.
 | Type in the filter box | Filter the current table by name, PID, port, address or state |
 | Click a group header | Expand or collapse every process with that name |
 | `Alert over` in Processes | Notify when one process name has more instances than that |
+| Alerts tab | Read stored alerts; opening it marks them read and clears the tray dot |
 | Click a process row | Show only that process's ports |
 | Click a port row | Filter to the owning PID (click again to clear) |
 | `☆` / `★` in the Ports table | Pin or unpin a port for open/close alerts |
