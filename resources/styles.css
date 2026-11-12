@@ -42,7 +42,7 @@ body {
 body {
   background: var(--bg);
   color: var(--ink);
-  font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif;
+  font: 12px/1.38 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -70,24 +70,24 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 10px 16px;
+  gap: 12px;
+  padding: 6px 12px;
   background: linear-gradient(180deg, #45abf6 0%, #1189e8 52%, #0a5ea6 100%);
-  border-bottom: 3px solid var(--red-600);
+  border-bottom: 2px solid var(--red-600);
   color: #ffffff;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
 .brand-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
   flex: none;
   background: #ffffff;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 2px 6px rgba(6, 48, 82, 0.35);
@@ -95,9 +95,9 @@ select {
 
 .brand-text h1 {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
   color: #ffffff;
   text-shadow: 0 1px 1px rgba(6, 48, 82, 0.35);
 }
@@ -107,7 +107,7 @@ select {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: 10.5px;
   color: rgba(255, 255, 255, 0.94);
   text-shadow: 0 1px 1px rgba(6, 48, 82, 0.28);
 }
@@ -147,12 +147,12 @@ select {
 .controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .search {
-  width: 240px;
-  padding: 6px 10px;
+  width: 220px;
+  padding: 4px 8px;
   background: rgba(255, 255, 255, 0.97);
   border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 7px;
@@ -175,7 +175,7 @@ select {
 
 .select-wrap select {
   appearance: none;
-  padding: 6px 26px 6px 10px;
+  padding: 4px 22px 4px 8px;
   background: rgba(255, 255, 255, 0.97);
   border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 7px;
@@ -192,7 +192,7 @@ select {
 .select-wrap::after {
   content: "";
   position: absolute;
-  right: 10px;
+  right: 8px;
   top: 50%;
   width: 5px;
   height: 5px;
@@ -235,8 +235,8 @@ select {
 }
 
 .btn {
-  padding: 6px 12px;
-  border-radius: 7px;
+  padding: 4px 9px;
+  border-radius: 6px;
   border: 1px solid var(--blue-700);
   background: linear-gradient(180deg, #1e9bf0, #0b7ad4);
   color: #ffffff;
@@ -270,8 +270,8 @@ select {
 }
 
 .btn.tiny {
-  padding: 3px 9px;
-  font-size: 11.5px;
+  padding: 2px 7px;
+  font-size: 10.5px;
 }
 
 .btn.danger {
@@ -301,16 +301,16 @@ select {
 .stat {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 9px 16px;
+  gap: 1px;
+  padding: 5px 12px;
   background: var(--surface);
   min-width: 0;
 }
 
 .stat-label {
-  font-size: 10.5px;
+  font-size: 9.5px;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.5px;
   color: var(--ink-faint);
   white-space: nowrap;
   overflow: hidden;
@@ -319,7 +319,7 @@ select {
 
 .stat-value {
   font-family: var(--mono);
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--blue-900);
@@ -330,12 +330,12 @@ select {
 .error-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
+  gap: 8px;
+  padding: 5px 12px;
   background: var(--red-100);
   border-bottom: 1px solid #f3c2c2;
   color: var(--red-700);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .error-text {
@@ -343,7 +343,7 @@ select {
   min-width: 0;
   overflow-wrap: anywhere;
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 11px;
 }
 
 /* ---------- tabs ---------- */
@@ -351,8 +351,8 @@ select {
 .tabs {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
+  gap: 2px;
+  padding: 3px 10px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-sunken);
 }
@@ -360,11 +360,11 @@ select {
 .tab {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 5px;
+  padding: 4px 10px;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 6px;
   color: var(--ink-soft);
   cursor: pointer;
 }
@@ -383,8 +383,8 @@ select {
 
 .tab .count {
   font-family: var(--mono);
-  font-size: 10.5px;
-  padding: 1px 6px;
+  font-size: 10px;
+  padding: 0 5px;
   border-radius: 20px;
   background: var(--blue-050);
   color: var(--ink-faint);
@@ -398,20 +398,20 @@ select {
 .tabs-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-left: auto;
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 6px 3px 10px;
+  gap: 5px;
+  padding: 2px 5px 2px 8px;
   border-radius: 20px;
   background: var(--blue-100);
   border: 1px solid rgba(17, 137, 232, 0.45);
   color: var(--blue-900);
-  font-size: 11.5px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -420,7 +420,7 @@ select {
   background: transparent;
   color: inherit;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1;
   padding: 0 3px;
   opacity: 0.7;
@@ -435,7 +435,7 @@ select {
   align-items: center;
   gap: 6px;
   color: var(--ink-soft);
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   user-select: none;
 }
@@ -451,19 +451,19 @@ select {
   align-items: center;
   gap: 6px;
   color: var(--ink-soft);
-  font-size: 12px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
 .num-input {
-  width: 52px;
-  padding: 2px 6px;
+  width: 46px;
+  padding: 1px 5px;
   border: 1px solid var(--border-strong);
   border-radius: 5px;
   background: var(--surface);
   color: var(--ink);
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 11px;
   text-align: right;
 }
 
@@ -513,9 +513,9 @@ select {
   z-index: 1;
   background: #eaf4fd;
   border-bottom: 1px solid var(--border-strong);
-  padding: 7px 12px;
+  padding: 4px 10px;
   text-align: left;
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
@@ -555,8 +555,8 @@ select {
 #panel-ports .grid th:nth-child(3) { width: 6%; }
 #panel-ports .grid th:nth-child(4) { width: 10%; }
 #panel-ports .grid th:nth-child(5) { width: 23%; }
-#panel-ports .grid th:nth-child(6) { width: 29%; }
-#panel-ports .grid th:nth-child(7) { width: 7%; }
+#panel-ports .grid th:nth-child(6) { width: 27%; }
+#panel-ports .grid th:nth-child(7) { width: 9%; }
 #panel-ports .grid th:nth-child(8) { width: 12%; }
 
 .grid th.pin-col,
@@ -571,9 +571,9 @@ select {
   background: transparent;
   color: #a8bfd2;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1;
-  padding: 2px 5px;
+  padding: 1px 4px;
   border-radius: 4px;
 }
 
@@ -596,13 +596,13 @@ select {
 }
 
 #panel-processes .grid th:nth-child(1) { width: 18%; }
-#panel-processes .grid th:nth-child(2) { width: 7%; }
+#panel-processes .grid th:nth-child(2) { width: 9%; }
 #panel-processes .grid th:nth-child(3) { width: 8%; }
 #panel-processes .grid th:nth-child(4) { width: 9%; }
 #panel-processes .grid th:nth-child(5) { width: 7%; }
 #panel-processes .grid th:nth-child(6) { width: 7%; }
 #panel-processes .grid th:nth-child(7) { width: 7%; }
-#panel-processes .grid th:nth-child(8) { width: 20%; }
+#panel-processes .grid th:nth-child(8) { width: 18%; }
 #panel-processes .grid th:nth-child(9) { width: 17%; }
 
 #panel-processes .grid th.actions-col,
@@ -612,16 +612,16 @@ select {
 }
 
 #panel-processes .grid td.actions-col .btn {
-  padding: 2px 8px;
-  font-size: 11px;
+  padding: 1px 6px;
+  font-size: 10.5px;
 }
 
 #panel-processes .grid td.actions-col .btn + .btn {
-  margin-left: 5px;
+  margin-left: 4px;
 }
 
 .grid tbody td {
-  padding: 5px 12px;
+  padding: 3px 10px;
   border-bottom: 1px solid #e8f1fa;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -662,8 +662,8 @@ select {
 
 .group-caret {
   flex: none;
-  width: 9px;
-  font-size: 10px;
+  width: 8px;
+  font-size: 9px;
   color: var(--ink-faint);
 }
 
@@ -679,7 +679,7 @@ select {
 }
 
 .grid tbody tr.is-child td:first-child {
-  padding-left: 26px;
+  padding-left: 22px;
 }
 
 .grid tbody tr.is-child .proc-name {
@@ -717,16 +717,16 @@ select {
 }
 
 .proc-note {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--ink-faint);
   flex: none;
 }
 
 .badge {
   display: inline-block;
-  padding: 1px 6px;
+  padding: 1px 4px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;
@@ -776,10 +776,10 @@ select {
 
 .empty {
   margin: 0;
-  padding: 26px 16px;
+  padding: 16px 12px;
   color: var(--ink-faint);
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 /* ---------- activity ---------- */
@@ -788,12 +788,12 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px 16px;
+  gap: 10px;
+  padding: 5px 12px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-sunken);
   color: var(--ink-faint);
-  font-size: 11.5px;
+  font-size: 11px;
 }
 
 .events {
@@ -808,11 +808,11 @@ select {
 .events li {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 16px;
+  gap: 8px;
+  padding: 3px 12px;
   border-bottom: 1px solid #e8f1fa;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .events li:nth-child(even) {
@@ -837,7 +837,7 @@ select {
   flex: none;
   width: 34px;
   text-transform: uppercase;
-  font-size: 10.5px;
+  font-size: 10px;
 }
 
 .events .ev-proc {
@@ -851,7 +851,7 @@ select {
   margin-left: auto;
   color: var(--ink-faint);
   flex: none;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 /* ---------- status bar ---------- */
@@ -859,11 +859,11 @@ select {
 .statusbar {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 6px 16px;
+  gap: 10px;
+  padding: 4px 12px;
   border-top: 1px solid var(--border);
   background: var(--surface-sunken);
-  font-size: 11.5px;
+  font-size: 10.5px;
   color: var(--ink-soft);
 }
 
@@ -880,8 +880,8 @@ select {
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -891,7 +891,7 @@ select {
 ::-webkit-scrollbar-thumb {
   background: #c3ddf2;
   border-radius: 6px;
-  border: 2px solid var(--surface-sunken);
+  border: 1px solid var(--surface-sunken);
 }
 
 ::-webkit-scrollbar-thumb:hover {

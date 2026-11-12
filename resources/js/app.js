@@ -37,8 +37,8 @@
     // Processes suspended from this app. Windows does not expose a reliable
     // "is suspended" flag, so the app remembers what it changed this session.
     suspended: new Set(),
-    // Process-name groups the user collapsed in the Processes table.
-    collapsedGroups: new Set(),
+    // Process-name groups the user expanded; every group starts collapsed.
+    expandedGroups: new Set(),
     // A name with more than this many instances raises an alert once, then
     // stays quiet until it drops back under the limit. 0 turns the check off.
     groupLimit: 25,
@@ -498,7 +498,7 @@
 
   function groupRowHtml(group) {
     const key = groupKey(group.name);
-    const collapsed = state.collapsedGroups.has(key);
+    const collapsed = !state.expandedGroups.has(key);
     const hot = group.cpuPct >= 25 ? ' cpu-hot' : '';
     const over = state.groupLimit > 0 && group.count > state.groupLimit;
     return (
@@ -529,9 +529,7 @@
     const groups = processGroups(rows, state.sort.processes);
 
     $('procsEmpty').classList.toggle('hidden', rows.length > 0);
-    $('procsBody').innerHTML = groups
-      .map((group) => (group.count === 1 ? procRowHtml(group.members[0], false) : groupRowHtml(group)))
-      .join('');
+    $('procsBody').innerHTML = groups.map((group) => groupRowHtml(group)).join('');
 
     markSortedHeaders('processes');
   }
@@ -817,8 +815,8 @@
         if (['ports', 'processes', 'activity'].includes(prefs.tab)) state.tab = prefs.tab;
         if (typeof prefs.pinOnly === 'boolean') state.pinOnly = prefs.pinOnly;
         if (Number.isFinite(prefs.groupLimit)) state.groupLimit = Math.max(0, Math.min(9999, Math.round(prefs.groupLimit)));
-        if (Array.isArray(prefs.collapsedGroups)) {
-          state.collapsedGroups = new Set(prefs.collapsedGroups.filter((name) => typeof name === 'string'));
+        if (Array.isArray(prefs.expandedGroups)) {
+          state.expandedGroups = new Set(prefs.expandedGroups.filter((name) => typeof name === 'string'));
         }
         if (Array.isArray(prefs.pinned)) {
           state.pinned = new Map();
@@ -843,7 +841,7 @@
           showAllSockets: state.showAllSockets,
           tab: state.tab,
           pinOnly: state.pinOnly,
-          collapsedGroups: Array.from(state.collapsedGroups),
+          expandedGroups: Array.from(state.expandedGroups),
           groupLimit: state.groupLimit,
           pinned: Array.from(state.pinned.values()).map((entry) => ({ proto: entry.proto, port: entry.port })),
         })
@@ -949,8 +947,8 @@
       const groupRow = event.target.closest('tr[data-group]');
       if (groupRow) {
         const key = groupRow.dataset.group;
-        if (state.collapsedGroups.has(key)) state.collapsedGroups.delete(key);
-        else state.collapsedGroups.add(key);
+        if (state.expandedGroups.has(key)) state.expandedGroups.delete(key);
+        else state.expandedGroups.add(key);
         savePrefs();
         renderProcesses();
         return;
